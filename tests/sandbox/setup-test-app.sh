@@ -11,9 +11,15 @@ if [ ! -d "$APP_DIR" ]; then
     
     cd "$APP_DIR"
     
-    echo "Linking Load Balancer Package natively..."
-    composer config repositories.local '{"type": "path", "url": "../../../"}'
-    composer require adrianlaraperez88/load-balancer @dev
+    if [ "$INSTALL_FROM_GITHUB" = "true" ]; then
+        echo "Linking Load Balancer Package autonomously directly from GitHub..."
+        composer config repositories.github '{"type": "vcs", "url": "https://github.com/adrianlaraperez88/load-balancer"}'
+        composer require adrianlaraperez88/load-balancer:dev-main
+    else
+        echo "Linking Load Balancer Package locally via natively mapped paths..."
+        composer config repositories.local '{"type": "path", "url": "../../../"}'
+        composer require adrianlaraperez88/load-balancer @dev
+    fi
     
     echo "Publishing Configurations and Migrating Databases..."
     php artisan vendor:publish --provider="Isg\LoadBalancer\LoadBalancerServiceProvider"

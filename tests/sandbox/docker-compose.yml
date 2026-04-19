@@ -16,6 +16,7 @@ services:
       - REDIS_HOST=valkey
       - REDIS_PORT=6379
       - IS_DOCKER=1
+      - INSTALL_FROM_GITHUB=false
     volumes:
       - ../../:/var/www/html
     networks:
