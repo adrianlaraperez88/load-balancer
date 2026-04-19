@@ -2,6 +2,7 @@
     "name": "adrianlaraperez88/load-balancer",
     "description": "Database-driven load balancer for Laravel applications",
     "type": "library",
+    "license": "MIT",
     "require": {
         "php": "^8.2",
         "illuminate/support": "^10.0|^11.0|^12.0",
