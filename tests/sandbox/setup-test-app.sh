@@ -7,18 +7,21 @@ APP_DIR="/var/www/html/tests/sandbox/test-app"
 
 if [ ! -d "$APP_DIR" ]; then
     echo "Creating Laravel dummy application for Sandbox verification..."
-    composer create-project laravel/laravel "$APP_DIR" --prefer-dist -q
+    composer create-project "laravel/laravel:^12.0" "$APP_DIR" --prefer-dist -q
     
     cd "$APP_DIR"
+    
+    echo "Securing Git Directory boundaries for Composer VCS mapping..."
+    git config --global --add safe.directory '*'
     
     if [ "$INSTALL_FROM_GITHUB" = "true" ]; then
         echo "Linking Load Balancer Package autonomously directly from GitHub..."
         composer config repositories.github '{"type": "vcs", "url": "https://github.com/adrianlaraperez88/load-balancer"}'
-        composer require adrianlaraperez88/load-balancer:dev-main
+        composer require adrianlaraperez88/load-balancer:dev-main -W
     else
         echo "Linking Load Balancer Package locally via natively mapped paths..."
         composer config repositories.local '{"type": "path", "url": "../../../"}'
-        composer require adrianlaraperez88/load-balancer @dev
+        composer require adrianlaraperez88/load-balancer @dev -W
     fi
     
     echo "Publishing Configurations and Migrating Databases..."
