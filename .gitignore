@@ -1,0 +1,7 @@
+/vendor/
+/.phpunit.cache/
+/tests/sandbox/test-app
+.env
+.env.backup
+.env.production
+composer.lock
