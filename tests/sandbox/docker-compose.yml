@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: isg_load_balancer_app
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_CONNECTION=sqlite
+      - REDIS_CLIENT=phpredis
+      - REDIS_HOST=valkey
+      - REDIS_PORT=6379
+      - IS_DOCKER=1
+    volumes:
+      - ../../:/var/www/html
+    networks:
+      - proxy_network
+    depends_on:
+      - valkey
+    command: sh tests/sandbox/setup-test-app.sh
+
+  valkey:
+    image: valkey/valkey:alpine
+    container_name: isg_load_balancer_valkey
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    networks:
+      - proxy_network
+
+  node1:
+    image: nginx:alpine
+    container_name: isg_load_balancer_node1
+    command: /bin/sh -c "echo '<h1>Hello from Simulated Node 1!</h1>' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
+    networks:
+      - proxy_network
+
+  node2:
+    image: nginx:alpine
+    container_name: isg_load_balancer_node2
+    command: /bin/sh -c "echo '<h1>Hello from Simulated Node 2!</h1>' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
+    networks:
+      - proxy_network
+
+  node3:
+    image: nginx:alpine
+    container_name: isg_load_balancer_node3
+    command: /bin/sh -c "echo '<h1>Hello from Simulated Node 3!</h1>' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
+    networks:
+      - proxy_network
+
+networks:
+  proxy_network:
+    driver: bridge
