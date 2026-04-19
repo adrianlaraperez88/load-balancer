@@ -7,7 +7,7 @@ A highly resilient, database-driven standalone Load Balancer package for Laravel
 Require the package via composer:
 
 ```bash
-composer require isg/load-balancer
+composer require adrianlaraperez88/load-balancer
 ```
 
 Publish the package configuration files and database migrations:

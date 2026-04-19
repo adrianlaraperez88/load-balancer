@@ -1,5 +1,5 @@
 {
-    "name": "isg/load-balancer",
+    "name": "adrianlaraperez88/load-balancer",
     "description": "Database-driven load balancer for Laravel applications",
     "type": "library",
     "require": {

@@ -13,7 +13,7 @@ if [ ! -d "$APP_DIR" ]; then
     
     echo "Linking Load Balancer Package natively..."
     composer config repositories.local '{"type": "path", "url": "../../../"}'
-    composer require isg/load-balancer @dev
+    composer require adrianlaraperez88/load-balancer @dev
     
     echo "Publishing Configurations and Migrating Databases..."
     php artisan vendor:publish --provider="Isg\LoadBalancer\LoadBalancerServiceProvider"
