@@ -3,7 +3,7 @@
     "description": "Database-driven load balancer for Laravel applications",
     "type": "library",
     "require": {
-        "php": "^8.3",
+        "php": "^8.2",
         "illuminate/support": "^10.0|^11.0|^12.0",
         "illuminate/http": "^10.0|^11.0|^12.0",
         "illuminate/database": "^10.0|^11.0|^12.0",
