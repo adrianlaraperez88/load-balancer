@@ -1,4 +1,4 @@
-# ISG Load Balancer
+# Load Balancer
 
 A highly resilient, database-driven standalone Load Balancer package for Laravel 10 and 11 featuring Proxy and Native Redirect architectural modes, advanced state cachers, Enterprise-level scaling analytics, and strict SSRF security frameworks.
 
