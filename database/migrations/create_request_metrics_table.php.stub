@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('request_metrics', function (Blueprint $table) {
+        Schema::connection(config('load-balancer.database_connection'))->create('request_metrics', function (Blueprint $table) {
             $table->id();
             $table->string('incoming_ip');
             $table->foreignId('upstream_node_id')->nullable()->constrained('upstream_nodes')->nullOnDelete();
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('request_metrics');
+        Schema::connection(config('load-balancer.database_connection'))->dropIfExists('request_metrics');
     }
 };

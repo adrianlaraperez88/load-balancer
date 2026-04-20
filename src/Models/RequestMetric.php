@@ -5,7 +5,7 @@ namespace Isg\LoadBalancer\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class RequestMetric extends Model
+class RequestMetric extends BaseModel
 {
     const UPDATED_AT = null; // We only need created_at for metrics
 

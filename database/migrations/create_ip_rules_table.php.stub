@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ip_rules', function (Blueprint $table) {
+        Schema::connection(config('load-balancer.database_connection'))->create('ip_rules', function (Blueprint $table) {
             $table->id();
             $table->string('ip_address');
             $table->foreignId('upstream_node_id')->constrained('upstream_nodes')->onDelete('cascade');
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ip_rules');
+        Schema::connection(config('load-balancer.database_connection'))->dropIfExists('ip_rules');
     }
 };

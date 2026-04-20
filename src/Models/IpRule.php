@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Cache;
 
-class IpRule extends Model
+class IpRule extends BaseModel
 {
     protected $fillable = [
         'ip_address',

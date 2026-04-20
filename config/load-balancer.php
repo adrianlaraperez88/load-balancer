@@ -3,6 +3,17 @@
 return [
     /*
     |--------------------------------------------------------------------------
+    | Database Connection
+    |--------------------------------------------------------------------------
+    |
+    | Define which database connection should be used for storing upstream
+    | nodes, IP rules, and request metrics.
+    |
+    */
+    'database_connection' => env('LOAD_BALANCER_DB_CONNECTION', config('database.default', 'mysql')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Sticky Sessions (IP Hash)
     |--------------------------------------------------------------------------
     |
