@@ -55,8 +55,9 @@ class ProxyController extends Controller
                 ], 500);
             }
 
-            // Production constraint: Reject unencrypted internal HTTP calls.
-            if ($isHttp && app()->environment('production')) {
+            // Production constraint: Reject unencrypted internal HTTP calls unless explicitly allowed (e.g., internal VPC/cluster)
+            $enforceHttps = config('load-balancer.enforce_https', true);
+            if ($isHttp && app()->environment('production') && $enforceHttps) {
                 return response()->json([
                     'error' => 'Internal Server Error',
                     'message' => 'Unencrypted HTTP upstream nodes are forbidden in production environments.'
@@ -83,13 +84,18 @@ class ProxyController extends Controller
                 $headers['X-Forwarded-Host'] = $request->getHost();
                 $headers['X-Forwarded-Proto'] = $request->getScheme();
                 
+                $options = [];
+                $body = $request->getContent();
+                if ($body !== '' && $body !== false && $body !== null) {
+                    $options['body'] = $body;
+                }
+
+                $timeout = (int) config('load-balancer.timeout', 30);
+
                 $proxyResponse = Http::withHeaders($headers)
                     ->withOptions(['decode_content' => false]) // Stop automatic ungzip
-                    ->timeout(10)
-                    ->send($method, $targetUrl, [
-                        'query' => $request->query(),
-                        'body' => $request->getContent(),
-                    ]);
+                    ->timeout($timeout)
+                    ->send($method, $targetUrl, $options);
 
                 $statusCode = $proxyResponse->status();
                 $body = $proxyResponse->body();

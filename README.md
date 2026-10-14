@@ -36,6 +36,82 @@ To run the automated PHPUnit verification models validating your extensions seam
 docker compose exec app php vendor/bin/phpunit
 ```
 
+## Architecture: 1 Front Gateway (app03) + N Backend Processing Servers
+
+When your UI / web clients should **only hit a single front-facing server (`app03`)** while $N$ backend servers (`app01`, `app02`, ..., `appN`) execute the workload and stream responses back through `app03`:
+
+```
+                       ┌────────────────────────────────────────────────────────┐
+                       │                   UI / Browser / Client                │
+                       └───────────────────────────┬────────────────────────────┘
+                                                   │ (All requests hit app03 only)
+                                                   ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  FRONT GATEWAY SERVER (app03)                                                                         │
+│                                                                                                        │
+│  - Public IP / Ingress (https://app03.domain.com)                                                      │
+│  - Package configured in Proxy Mode (LOAD_BALANCER_MODE=proxy)                                         │
+│  - Route::loadBalancer('{any?}') catches and routes traffic                                            │
+│  - Dispatches via Strategy (Round Robin, Adaptive Latency, Weighted, Sticky Sessions)                  │
+└───────────────┬──────────────────────────┬──────────────────────────┬──────────────────────────────────┘
+                │                          │                          │
+ (Internal HTTP/LAN)        (Internal HTTP/LAN)        (Internal HTTP/LAN)
+                │                          │                          │
+                ▼                          ▼                          ▼
+      ┌──────────────────┐       ┌──────────────────┐       ┌──────────────────┐
+      │  Backend app01   │       │  Backend app02   │       │  Backend app0N   │
+      │  (10.0.0.11:8000)│       │  (10.0.0.12:8000)│       │  (10.0.0.1N:8000)│
+      │  Compute/Process │       │  Compute/Process │       │  Compute/Process │
+      └──────────────────┘       └──────────────────┘       └──────────────────┘
+```
+
+### Setup on app03:
+
+#### 1. Environment Configuration (`.env` on `app03`):
+```env
+# 1. Force Proxy Mode (so app03 proxies payloads rather than issuing 302 redirects)
+LOAD_BALANCER_MODE=proxy
+
+# 2. Allow internal HTTP upstreams in production (if app03 talks to nodes over private VPC/LAN)
+LOAD_BALANCER_FORCE_HTTPS=false
+
+# 3. Choose your traffic balancing strategy
+LOAD_BALANCER_DEFAULT_STRATEGY=round_robin
+
+# 4. Set upstream timeout for long processing workloads (seconds)
+LOAD_BALANCER_TIMEOUT=60
+```
+
+#### 2. Register Routes on `app03` (`routes/web.php` or `routes/api.php`):
+Use the built-in route macro to capture all UI and API requests and proxy them:
+```php
+use Illuminate\Support\Facades\Route;
+
+// Proxies all incoming requests on app03 transparently to the backend cluster:
+Route::loadBalancer('{any?}');
+```
+
+#### 3. Register your N Backend Processing Nodes on `app03`:
+Use the CLI to register, view, or toggle backend nodes:
+```bash
+# Register backend nodes
+php artisan loadbalancer:node add --name=app01 --url=http://10.0.0.11:8000 --weight=1
+php artisan loadbalancer:node add --name=app02 --url=http://10.0.0.12:8000 --weight=1
+php artisan loadbalancer:node add --name=app04 --url=http://10.0.0.14:8000 --weight=2
+
+# View cluster status
+php artisan loadbalancer:node list
+```
+
+#### 4. Active Health Daemon:
+Schedule autonomous health pings on `app03` (in `app/Console/Kernel.php` or `routes/console.php`):
+```php
+Schedule::command('loadbalancer:health-check')->everyMinute();
+```
+If a backend node goes down, `app03` automatically routes around it and fails over without impacting the UI.
+
+---
+
 ## Features & Configuration
 
 ### 1. Proxies vs. Redirects (Modes)

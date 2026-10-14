@@ -99,4 +99,27 @@ return [
         'limit' => env('LOAD_BALANCER_WAF_LIMIT', 500),
         'window_minutes' => env('LOAD_BALANCER_WAF_WINDOW', 1),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Upstream Request Timeout
+    |--------------------------------------------------------------------------
+    |
+    | The duration in seconds that the proxy will wait for upstream backend
+    | servers to complete processing before considering the request timed out.
+    |
+    */
+    'timeout' => env('LOAD_BALANCER_TIMEOUT', 30),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Enforce HTTPS for Upstream Nodes in Production
+    |--------------------------------------------------------------------------
+    |
+    | In production, non-secure http:// upstream nodes are rejected by default
+    | for SSRF safety. Set this to false if your front server (e.g. app03)
+    | communicates with backend nodes over an internal, private VPC network.
+    |
+    */
+    'enforce_https' => env('LOAD_BALANCER_FORCE_HTTPS', true),
 ];

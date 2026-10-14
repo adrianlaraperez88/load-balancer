@@ -32,9 +32,15 @@ class LoadBalancerServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
         $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
 
+        \Illuminate\Support\Facades\Route::macro('loadBalancer', function (string $uri = '{any?}') {
+            return \Illuminate\Support\Facades\Route::any($uri, [\Isg\LoadBalancer\Http\Controllers\ProxyController::class, 'handle'])
+                ->where('any', '.*');
+        });
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 \Isg\LoadBalancer\Console\Commands\HealthCheckCommand::class,
+                \Isg\LoadBalancer\Console\Commands\ManageNodeCommand::class,
             ]);
 
             $this->publishes([

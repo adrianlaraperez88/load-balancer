@@ -79,4 +79,27 @@ class SecurityTest extends TestCase
             'message' => 'Unencrypted HTTP upstream nodes are forbidden in production environments.'
         ]);
     }
+
+    public function test_production_allows_internal_http_when_enforce_https_disabled()
+    {
+        $this->app['env'] = 'production';
+        config(['load-balancer.enforce_https' => false]);
+
+        $node = UpstreamNode::create([
+            'name' => 'Internal Node', 
+            'url' => 'http://10.0.0.11:8000', 
+            'is_active' => true
+        ]);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'http://10.0.0.11:8000/*' => \Illuminate\Support\Facades\Http::response(['status' => 'internal ok'], 200)
+        ]);
+
+        Route::any('/test-internal', [ProxyController::class, 'handle']);
+
+        $response = $this->get('/test-internal');
+        $response->assertStatus(200);
+        $response->assertJson(['status' => 'internal ok']);
+    }
 }
+
