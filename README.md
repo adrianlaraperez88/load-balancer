@@ -6,6 +6,7 @@ A turnkey, high-resilience standalone Load Balancer and Reverse Proxy applicatio
 
 ## Table of Contents
 
+- [Documentation Library (`docs/`)](#documentation-library-docs)
 - [Key Highlights](#key-highlights)
 - [Architecture: 1 Front Gateway (app03) + N Backends](#architecture-1-front-gateway-app03--n-backends)
 - [Installation](#installation)
@@ -41,6 +42,21 @@ A turnkey, high-resilience standalone Load Balancer and Reverse Proxy applicatio
   - [Custom Strategy Implementation](#custom-strategy-implementation)
 - [Configuration Reference (`.env`)](#configuration-reference-env)
 - [Testing & Quality Assurance](#testing--quality-assurance)
+
+---
+
+## Documentation Library (`docs/`)
+
+Comprehensive, dedicated operational runbooks and architectural specifications are maintained in the [`docs/`](file:///f:/ai-projects/load-balancer/docs/README.md) directory:
+
+| Guide | Description |
+| :--- | :--- |
+| [**Windows Server & IIS 10 Installation Guide**](file:///f:/ai-projects/load-balancer/docs/iis-installation-guide.md) | Step-by-step setup for Windows Server 2016/2019/2022 + IIS 10, FastCGI tuning, URL Rewrite 2.1, `HTTP_AUTHORIZATION` whitelisting, and NTFS permissions. |
+| [**Shared Server Deployment & Coexistence Guide**](file:///f:/ai-projects/load-balancer/docs/shared-server-deployment-guide.md) | Coexistence on a shared Windows/Linux server alongside existing CRM, ERP, and legacy sites using AppPool isolation, Host Name Bindings, and Valkey/DB namespacing. |
+| [**Backend Zero-Downtime Migration Runbook**](file:///f:/ai-projects/load-balancer/docs/backend-zero-downtime-migration.md) | 4-phase rollout: Permissive mode (`strict: false`), canary verification, DNS cutover, and strict perimeter lockdown without breaking current integrations. |
+| [**OWASP Top 10 Security Architecture**](file:///f:/ai-projects/load-balancer/docs/owasp-security-architecture.md) | Complete defensive matrix: SSRF metadata shields, CRLF header injection stripping, atomic anti-replay nonces, and brute-force throttling. |
+| [**Valkey Engine & Performance Architecture**](file:///f:/ai-projects/load-balancer/docs/valkey-and-performance.md) | Linux Foundation Valkey 8 integration, sub-millisecond response microcaching (`X-Cache: HIT/MISS`), keep-alive socket reuse, and 10-node scale benchmark results. |
+| [**Visual Cluster Web Admin Control Center**](file:///f:/ai-projects/load-balancer/docs/web-admin-control-center.md) | Operational walkthrough for the dark-mode GUI at `/admin/cluster`, authentication lock screen, 1-click dynamic node draining, and cluster provisioning. |
 
 ---
 
@@ -842,7 +858,7 @@ php vendor/bin/phpunit
 docker exec app03_gateway vendor/bin/phpunit
 ```
 
-All 58 unit and integration tests (188 assertions, 100% green) validate:
+All 59 unit and integration tests (190 assertions, 100% green) validate:
 - OWASP A10 / SSRF protection: Cloud metadata link-local blocking (`169.254.169.254`, `metadata.google.internal`).
 - OWASP A03 / CWE-113: Forwarded header CRLF injection and HTTP request splitting sanitization.
 - OWASP A02 & A07: Atomic cryptographic nonce anti-replay protection on signed requests.

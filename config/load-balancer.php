@@ -322,6 +322,7 @@ return [
     */
     'signature' => [
         'enabled' => env('LOAD_BALANCER_SIGNATURE_ENABLED', false),
+        'strict' => env('LOAD_BALANCER_SIGNATURE_STRICT', true),
         'secret' => env('LOAD_BALANCER_SIGNATURE_SECRET', null),
         'header' => 'X-LB-Signature',
         'timestamp_header' => 'X-LB-Timestamp',

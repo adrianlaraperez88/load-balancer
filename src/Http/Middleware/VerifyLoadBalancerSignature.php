@@ -46,6 +46,10 @@ class VerifyLoadBalancerSignature
         $requestId = (string) $request->headers->get('x-request-id', '');
 
         if ($signature === '' || $timestamp === '' || $requestId === '') {
+            if (!config('load-balancer.signature.strict', true)) {
+                return $next($request);
+            }
+
             return response()->json([
                 'error' => 'Unauthorized',
                 'message' => 'Missing required load balancer signature headers.',

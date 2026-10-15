@@ -84,4 +84,16 @@ class VerifyLoadBalancerSignatureTest extends TestCase
         $response->assertStatus(200);
         $response->assertJson(['status' => 'ok']);
     }
+
+    public function test_allows_missing_signature_when_strict_mode_is_disabled()
+    {
+        config(['load-balancer.signature.strict' => false]);
+
+        Route::get('/transitional-backend', fn () => response()->json(['status' => 'ok']))
+            ->middleware(VerifyLoadBalancerSignature::class);
+
+        $response = $this->getJson('/transitional-backend');
+        $response->assertStatus(200);
+        $response->assertJson(['status' => 'ok']);
+    }
 }
