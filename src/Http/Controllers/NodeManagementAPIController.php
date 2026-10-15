@@ -45,6 +45,10 @@ class NodeManagementAPIController extends Controller
                     if (isset($parsed['user']) || isset($parsed['pass'])) {
                         $fail("The {$attribute} must not contain embedded user credentials.");
                     }
+                    $host = strtolower($parsed['host'] ?? '');
+                    if ($this->isForbiddenSsrfTarget($host)) {
+                        $fail("The {$attribute} host cannot target cloud metadata services or link-local addresses.");
+                    }
                 },
             ],
             'weight' => 'sometimes|integer|min:1|max:1000',
@@ -176,5 +180,37 @@ class NodeManagementAPIController extends Controller
             'status' => 'success',
             'message' => "IP affinity rule for '{$ip}' removed.",
         ]);
+    }
+
+    /**
+     * OWASP A10 / SSRF Protection: Identify cloud metadata IP/hostnames and link-local ranges.
+     */
+    public function isForbiddenSsrfTarget(string $host): bool
+    {
+        if ($host === '') {
+            return true;
+        }
+
+        $blockedHosts = [
+            '169.254.169.254',
+            'metadata.google.internal',
+            'metadata.google',
+            'instance-data',
+            '169.254.169.253',
+            'fd00:ec2::254',
+        ];
+
+        if (in_array($host, $blockedHosts, true)) {
+            return true;
+        }
+
+        if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $long = ip2long($host);
+            if ($long !== false && ($long & 0xFFFF0000) === (int) ip2long('169.254.0.0')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

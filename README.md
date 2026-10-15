@@ -842,7 +842,12 @@ php vendor/bin/phpunit
 docker exec app03_gateway vendor/bin/phpunit
 ```
 
-All 53 unit and integration tests (172 assertions, 100% green) validate:
+All 58 unit and integration tests (188 assertions, 100% green) validate:
+- OWASP A10 / SSRF protection: Cloud metadata link-local blocking (`169.254.169.254`, `metadata.google.internal`).
+- OWASP A03 / CWE-113: Forwarded header CRLF injection and HTTP request splitting sanitization.
+- OWASP A02 & A07: Atomic cryptographic nonce anti-replay protection on signed requests.
+- OWASP A05: Security hardening headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`).
+- OWASP A07: Brute-force login rate limiting on Sanctum authentication (`throttle:10,1`).
 - Zero-trust header sanitization, IP proxy spoofing prevention, and multi-cookie preservation.
 - Laravel Sanctum authentication, Bearer token verification, and token revocation on logout.
 - Gateway response microcaching (`X-Cache: HIT / MISS`) and authentication bypass.

@@ -67,7 +67,20 @@ class HeaderSanitizer
             }
         }
 
-        return $headers;
+        // OWASP A03 / CWE-113: Strip CR, LF, and null bytes to prevent HTTP Request Smuggling & Header Splitting
+        $sanitized = [];
+        foreach ($headers as $name => $values) {
+            $cleaned = [];
+            foreach ((array) $values as $val) {
+                if (is_string($val)) {
+                    $val = str_replace(["\r", "\n", "\0"], '', $val);
+                }
+                $cleaned[] = $val;
+            }
+            $sanitized[$name] = $cleaned;
+        }
+
+        return $sanitized;
     }
 
     /**

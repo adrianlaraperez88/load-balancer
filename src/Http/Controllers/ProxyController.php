@@ -104,6 +104,12 @@ class ProxyController extends Controller
                 return $this->error(500, 'Internal Server Error', 'Upstream URL has an invalid schema.');
             }
 
+            // OWASP A10 / SSRF: Strictly block cloud instance metadata and link-local targets
+            $targetHost = strtolower(parse_url($targetUrl, PHP_URL_HOST) ?? '');
+            if ($this->isForbiddenSsrfTarget($targetHost)) {
+                return $this->error(403, 'Forbidden', 'Upstream target points to a forbidden metadata or link-local address.');
+            }
+
             // Production constraint: Reject unencrypted internal HTTP calls unless explicitly allowed (e.g., internal VPC/cluster)
             $enforceHttps = config('load-balancer.enforce_https', true);
             if ($isHttp && app()->environment('production') && $enforceHttps) {
@@ -239,6 +245,12 @@ class ProxyController extends Controller
             }
         }
 
+        // OWASP A05: Security hardening headers against MIME confusion and Clickjacking
+        $response->headers->set('x-content-type-options', 'nosniff');
+        if (!$response->headers->has('x-frame-options')) {
+            $response->headers->set('x-frame-options', 'SAMEORIGIN');
+        }
+
         return $response;
     }
 
@@ -295,6 +307,38 @@ class ProxyController extends Controller
     {
         return $e instanceof ConnectionException
             && preg_match('/cURL error 28\b|timed out/i', $e->getMessage()) === 1;
+    }
+
+    /**
+     * OWASP A10 / SSRF Protection: Identify cloud metadata IP/hostnames and link-local ranges.
+     */
+    public function isForbiddenSsrfTarget(string $host): bool
+    {
+        if ($host === '') {
+            return true;
+        }
+
+        $blockedHosts = [
+            '169.254.169.254',
+            'metadata.google.internal',
+            'metadata.google',
+            'instance-data',
+            '169.254.169.253',
+            'fd00:ec2::254',
+        ];
+
+        if (in_array($host, $blockedHosts, true)) {
+            return true;
+        }
+
+        if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $long = ip2long($host);
+            if ($long !== false && ($long & 0xFFFF0000) === (int) ip2long('169.254.0.0')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function error(int $status, string $error, string $message, ?string $requestId = null): Response

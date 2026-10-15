@@ -29,7 +29,8 @@ class ProtectMetricsEndpoint
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
-        if ($token !== '' && !hash_equals($token, (string) $request->bearerToken())) {
+        $provided = (string) ($request->bearerToken() ?: $request->header('X-Metrics-Secret', ''));
+        if ($token !== '' && !hash_equals($token, $provided)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 

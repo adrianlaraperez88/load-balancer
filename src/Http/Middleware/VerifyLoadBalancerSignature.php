@@ -84,6 +84,16 @@ class VerifyLoadBalancerSignature
             ], 403);
         }
 
+        // OWASP A02 & A07: Atomic Nonce Anti-Replay Defense
+        // Ensures identical signed requests cannot be replayed inside the tolerance window
+        $nonceKey = 'lb_seen_nonce_' . sha1($requestId);
+        if (!\Illuminate\Support\Facades\Cache::add($nonceKey, true, $tolerance)) {
+            return response()->json([
+                'error' => 'Unauthorized',
+                'message' => 'Load balancer signature replay detected (nonce already processed).',
+            ], 401);
+        }
+
         return $next($request);
     }
 }

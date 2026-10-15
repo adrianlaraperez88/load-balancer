@@ -33,8 +33,10 @@ Route::prefix('api/load-balancer')
 // 2. Authentication & Secure Communications (Sanctum)
 // ==============================================================================
 Route::prefix('api/auth')->group(function () {
-    // Public: Authenticate and issue Sanctum token
-    Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
+    // Public: Authenticate and issue Sanctum token with brute-force protection (OWASP A07)
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:10,1')
+        ->name('auth.login');
 
     // Protected by Sanctum Bearer token
     Route::middleware('auth:sanctum')->group(function () {
