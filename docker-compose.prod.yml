@@ -45,12 +45,12 @@ services:
     networks:
       - lb_network
 
-  # High-performance in-memory cache for circuits, active nodes, and rate limiting
+  # High-performance in-memory cache for circuits, active nodes, and rate limiting (Valkey)
   redis:
-    image: redis:7-alpine
-    container_name: app03_redis
+    image: valkey/valkey:8-alpine
+    container_name: app03_valkey
     restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: valkey-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     networks:

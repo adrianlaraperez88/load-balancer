@@ -34,6 +34,8 @@ class RedirectModeTest extends TestCase
         
         $app['config']->set('load-balancer.mode', 'redirect');
         $app['config']->set('load-balancer.default_strategy', 'least_redirects');
+        $app['config']->set('load-balancer.logging.enabled', true);
+        $app['config']->set('load-balancer.logging.sample_rate', 1.0);
     }
 
     protected function defineDatabaseMigrations()

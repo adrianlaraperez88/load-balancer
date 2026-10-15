@@ -94,10 +94,10 @@ services:
     networks:
       - cluster_net
 
-  # 5. Shared Redis Cache
+  # 5. Shared Valkey Cache (High-Performance Redis-Compatible Engine)
   redis:
-    image: redis:7-alpine
-    container_name: cluster_redis
+    image: valkey/valkey:8-alpine
+    container_name: cluster_valkey
     restart: unless-stopped
     networks:
       - cluster_net

@@ -20,11 +20,13 @@ class ManageNodeCommandTest extends TestCase
 
     protected function defineEnvironment($app)
     {
+        $app['config']->set('database.default', 'sqlite');
         $app['config']->set('database.connections.sqlite', [
             'driver'   => 'sqlite',
             'database' => ':memory:',
             'prefix'   => '',
         ]);
+        $app['config']->set('load-balancer.database_connection', 'sqlite');
     }
 
     protected function defineDatabaseMigrations()

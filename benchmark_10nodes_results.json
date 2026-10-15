@@ -1,0 +1,182 @@
+{
+  "timeout_validation": [
+    {
+      "delay_label": "1 ms",
+      "query_param": "delay_ms=1",
+      "elapsed_sec": 0.41,
+      "status": 200,
+      "expected_status": 200,
+      "pass": true,
+      "error": ""
+    },
+    {
+      "delay_label": "50 ms",
+      "query_param": "delay_ms=50",
+      "elapsed_sec": 0.3,
+      "status": 200,
+      "expected_status": 200,
+      "pass": true,
+      "error": ""
+    },
+    {
+      "delay_label": "250 ms",
+      "query_param": "delay_ms=250",
+      "elapsed_sec": 0.46,
+      "status": 200,
+      "expected_status": 200,
+      "pass": true,
+      "error": ""
+    },
+    {
+      "delay_label": "1 sec",
+      "query_param": "delay_s=1",
+      "elapsed_sec": 1.23,
+      "status": 200,
+      "expected_status": 200,
+      "pass": true,
+      "error": ""
+    },
+    {
+      "delay_label": "3 sec",
+      "query_param": "delay_s=3",
+      "elapsed_sec": 3.25,
+      "status": 200,
+      "expected_status": 200,
+      "pass": true,
+      "error": ""
+    },
+    {
+      "delay_label": "6 sec",
+      "query_param": "delay_s=6",
+      "elapsed_sec": 6.25,
+      "status": 200,
+      "expected_status": 200,
+      "pass": true,
+      "error": ""
+    },
+    {
+      "delay_label": "8 sec",
+      "query_param": "delay_s=8",
+      "elapsed_sec": 8.27,
+      "status": 200,
+      "expected_status": 200,
+      "pass": true,
+      "error": ""
+    },
+    {
+      "delay_label": "12 sec",
+      "query_param": "delay_s=12",
+      "elapsed_sec": 30.32,
+      "status": 502,
+      "expected_status": [
+        502,
+        504
+      ],
+      "pass": true,
+      "error": "HTTP Error 502: Bad Gateway"
+    }
+  ],
+  "concurrency_tiers": [
+    {
+      "concurrency": 20,
+      "total_requests": 500,
+      "elapsed_sec": 6.88,
+      "rps": 72.7,
+      "success_rate_pct": 100.0,
+      "p50_ms": 259.9,
+      "p95_ms": 335.8,
+      "p99_ms": 415.9,
+      "min_ms": 181.2,
+      "max_ms": 1220.9,
+      "server_distribution": {
+        "app02": 58,
+        "app03_compute": 53,
+        "app04": 58,
+        "app05": 49,
+        "app06": 51,
+        "app07": 45,
+        "app10": 58,
+        "app09": 38,
+        "app01": 45,
+        "app08": 45
+      }
+    },
+    {
+      "concurrency": 50,
+      "total_requests": 1500,
+      "elapsed_sec": 16.74,
+      "rps": 89.6,
+      "success_rate_pct": 100.0,
+      "p50_ms": 536.3,
+      "p95_ms": 697.4,
+      "p99_ms": 775.8,
+      "min_ms": 263.4,
+      "max_ms": 866.9,
+      "server_distribution": {
+        "app08": 182,
+        "app09": 153,
+        "app10": 136,
+        "app01": 165,
+        "app02": 130,
+        "app03_compute": 120,
+        "app04": 136,
+        "app05": 143,
+        "app06": 168,
+        "app07": 167
+      }
+    },
+    {
+      "concurrency": 100,
+      "total_requests": 3000,
+      "elapsed_sec": 30.53,
+      "rps": 98.3,
+      "success_rate_pct": 100.0,
+      "p50_ms": 1013.1,
+      "p95_ms": 1101.5,
+      "p99_ms": 1160.7,
+      "min_ms": 436.1,
+      "max_ms": 1321.2,
+      "server_distribution": {
+        "app09": 326,
+        "app10": 311,
+        "app01": 324,
+        "app02": 308,
+        "app03_compute": 300,
+        "app04": 293,
+        "app05": 328,
+        "app06": 279,
+        "app07": 280,
+        "app08": 251
+      }
+    },
+    {
+      "concurrency": 200,
+      "total_requests": 5000,
+      "elapsed_sec": 51.85,
+      "rps": 96.4,
+      "success_rate_pct": 100.0,
+      "p50_ms": 2042.4,
+      "p95_ms": 2350.3,
+      "p99_ms": 2563.7,
+      "min_ms": 474.6,
+      "max_ms": 2748.6,
+      "server_distribution": {
+        "app05": 603,
+        "app06": 522,
+        "app07": 489,
+        "app08": 477,
+        "app09": 474,
+        "app10": 498,
+        "app01": 480,
+        "app02": 509,
+        "app03_compute": 461,
+        "app04": 487
+      }
+    }
+  ],
+  "projection_100k": {
+    "max_rps": 98.3,
+    "projected_10min_capacity": 58980,
+    "time_for_100k_minutes": 16.95
+  }
+}

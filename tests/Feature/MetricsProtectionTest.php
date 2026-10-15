@@ -24,6 +24,9 @@ class MetricsProtectionTest extends TestCase
             'database' => ':memory:',
             'prefix'   => '',
         ]);
+        $app['config']->set('load-balancer.metrics.enabled', false);
+        $app['config']->set('load-balancer.metrics.token', null);
+        $app['config']->set('load-balancer.metrics.allowed_ips', []);
     }
 
     protected function defineDatabaseMigrations()
@@ -43,7 +46,11 @@ class MetricsProtectionTest extends TestCase
 
     public function test_metrics_endpoint_returns_403_when_enabled_without_token_or_ips()
     {
-        config(['load-balancer.metrics.enabled' => true]);
+        config([
+            'load-balancer.metrics.enabled' => true,
+            'load-balancer.metrics.token' => null,
+            'load-balancer.metrics.allowed_ips' => [],
+        ]);
 
         $response = $this->getJson('/api/load-balancer/metrics');
 

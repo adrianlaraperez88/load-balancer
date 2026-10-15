@@ -29,6 +29,7 @@ class SecurityTest extends TestCase
         ]);
         
         $app['config']->set('load-balancer.mode', 'proxy');
+        $app['config']->set('load-balancer.enforce_https', true);
     }
 
     protected function defineDatabaseMigrations()

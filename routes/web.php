@@ -25,4 +25,11 @@ Route::get('/api/docs/openapi.json', function () {
     ]);
 })->name('api.docs.spec');
 
+// ==============================================================================
+// Visual Cluster Control Center (Web Admin GUI)
+// ==============================================================================
+Route::get('/admin/cluster', function () {
+    return response()->file(public_path('admin/index.html'));
+})->name('admin.cluster');
+
 Route::loadBalancer('{any?}');

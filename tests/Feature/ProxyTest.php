@@ -34,6 +34,8 @@ class ProxyTest extends TestCase
         
         $app['config']->set('load-balancer.mode', 'proxy');
         $app['config']->set('load-balancer.default_strategy', 'round_robin');
+        $app['config']->set('load-balancer.logging.enabled', true);
+        $app['config']->set('load-balancer.logging.sample_rate', 1.0);
     }
 
     protected function defineDatabaseMigrations()

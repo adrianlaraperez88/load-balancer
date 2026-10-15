@@ -21,14 +21,16 @@ services:
       - APP_KEY=base64:u3G5jEHzkH7P7M4N1w8xYz9vB2cQ5sT8u1vW4xY7z0A=
       - APP_URL=http://localhost:8080
       
-      # Database
+      # Database & Cache (Valkey)
       - DB_CONNECTION=sqlite
       - DB_DATABASE=/var/www/html/database/database.sqlite
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       
       # Reverse Proxy & Load Balancer Settings
       - LOAD_BALANCER_MODE=proxy
       - LOAD_BALANCER_DEFAULT_STRATEGY=round_robin
-      - LOAD_BALANCER_TIMEOUT=30
+      - LOAD_BALANCER_TIMEOUT=10
       - LOAD_BALANCER_CONNECT_TIMEOUT=3
       - LOAD_BALANCER_FORCE_HTTPS=false
       - LOAD_BALANCER_STREAM_RESPONSES=true
@@ -52,6 +54,11 @@ services:
       - backend_app03
       - backend_app04
       - backend_app05
+      - backend_app06
+      - backend_app07
+      - backend_app08
+      - backend_app09
+      - backend_app10
       - redis
     networks:
       - cluster_net
@@ -126,10 +133,80 @@ services:
     networks:
       - cluster_net
 
-  # 7. Shared Redis Cache
+  # 7. Backend Processing Node 6
+  backend_app06:
+    image: php:8.3-cli-alpine
+    container_name: backend_app06
+    restart: unless-stopped
+    environment:
+      - SERVER_NAME=app06
+    volumes:
+      - ./docker/test-cluster/backend.php:/app/backend.php
+    working_dir: /app
+    command: php -S 0.0.0.0:8000 /app/backend.php
+    networks:
+      - cluster_net
+
+  # 8. Backend Processing Node 7
+  backend_app07:
+    image: php:8.3-cli-alpine
+    container_name: backend_app07
+    restart: unless-stopped
+    environment:
+      - SERVER_NAME=app07
+    volumes:
+      - ./docker/test-cluster/backend.php:/app/backend.php
+    working_dir: /app
+    command: php -S 0.0.0.0:8000 /app/backend.php
+    networks:
+      - cluster_net
+
+  # 9. Backend Processing Node 8
+  backend_app08:
+    image: php:8.3-cli-alpine
+    container_name: backend_app08
+    restart: unless-stopped
+    environment:
+      - SERVER_NAME=app08
+    volumes:
+      - ./docker/test-cluster/backend.php:/app/backend.php
+    working_dir: /app
+    command: php -S 0.0.0.0:8000 /app/backend.php
+    networks:
+      - cluster_net
+
+  # 10. Backend Processing Node 9
+  backend_app09:
+    image: php:8.3-cli-alpine
+    container_name: backend_app09
+    restart: unless-stopped
+    environment:
+      - SERVER_NAME=app09
+    volumes:
+      - ./docker/test-cluster/backend.php:/app/backend.php
+    working_dir: /app
+    command: php -S 0.0.0.0:8000 /app/backend.php
+    networks:
+      - cluster_net
+
+  # 11. Backend Processing Node 10
+  backend_app10:
+    image: php:8.3-cli-alpine
+    container_name: backend_app10
+    restart: unless-stopped
+    environment:
+      - SERVER_NAME=app10
+    volumes:
+      - ./docker/test-cluster/backend.php:/app/backend.php
+    working_dir: /app
+    command: php -S 0.0.0.0:8000 /app/backend.php
+    networks:
+      - cluster_net
+
+  # 12. Shared Valkey Cache (High-Performance Redis-Compatible Engine)
   redis:
-    image: redis:7-alpine
-    container_name: cluster_redis
+    image: valkey/valkey:8-alpine
+    container_name: cluster_valkey
     restart: unless-stopped
     networks:
       - cluster_net

@@ -50,6 +50,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Upstream Timeouts (Seconds)
+    |--------------------------------------------------------------------------
+    */
+    'timeout' => (int) env('LOAD_BALANCER_TIMEOUT', 30),
+    'connect_timeout' => (int) env('LOAD_BALANCER_CONNECT_TIMEOUT', 3),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Gateway Response Microcaching
+    |--------------------------------------------------------------------------
+    |
+    | High-throughput microcaching for idempotent GET/HEAD requests.
+    | Caches responses for short intervals (e.g. 2-5 seconds), delivering
+    | sub-millisecond responses and 1,000+ RPS without querying backends.
+    | Mutating requests and requests with Authorization headers bypass caching.
+    |
+    */
+    'cache' => [
+        'enabled' => (bool) env('LOAD_BALANCER_CACHE_ENABLED', false),
+        'ttl_seconds' => (int) env('LOAD_BALANCER_CACHE_TTL', 5),
+        'store' => env('LOAD_BALANCER_CACHE_STORE', null),
+        'methods' => ['GET', 'HEAD'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Load Balancing Strategies
     |--------------------------------------------------------------------------
     |

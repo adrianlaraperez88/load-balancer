@@ -13,7 +13,14 @@
         </testsuite>
     </testsuites>
     <php>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
+        <env name="LOAD_BALANCER_LOGGING" value="true" force="true"/>
+        <env name="LOAD_BALANCER_METRICS_ENABLED" value="false" force="true"/>
+        <env name="LOAD_BALANCER_METRICS_TOKEN" value="" force="true"/>
+        <env name="LOAD_BALANCER_METRICS_IPS" value="" force="true"/>
+        <env name="LOAD_BALANCER_FORCE_HTTPS" value="true" force="true"/>
+        <env name="LOAD_BALANCER_CACHE_ENABLED" value="false" force="true"/>
     </php>
 </phpunit>

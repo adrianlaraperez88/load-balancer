@@ -61,6 +61,10 @@ class HeaderSanitizer
 
             $headers[$sigHeader] = [$signature];
             $headers[$timeHeader] = [$timestamp];
+
+            if ($activeKeyId = config('load-balancer.signature.active_key_id')) {
+                $headers['x-lb-key-id'] = [(string) $activeKeyId];
+            }
         }
 
         return $headers;

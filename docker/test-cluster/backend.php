@@ -30,6 +30,15 @@ foreach ($_SERVER as $key => $value) {
     }
 }
 
+// Artificial delay simulation for latency & timeout testing (?delay_ms=... or ?delay_s=...)
+$delayMs = isset($_GET['delay_ms']) ? (int) $_GET['delay_ms'] : 0;
+$delayS = isset($_GET['delay_s']) ? (int) $_GET['delay_s'] : 0;
+if ($delayS > 0) {
+    sleep($delayS);
+} elseif ($delayMs > 0) {
+    usleep($delayMs * 1000);
+}
+
 // 1. Health check endpoint (Public)
 if ($uri === '/health') {
     http_response_code(200);

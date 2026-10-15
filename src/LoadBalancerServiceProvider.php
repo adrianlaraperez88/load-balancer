@@ -55,8 +55,12 @@ class LoadBalancerServiceProvider extends ServiceProvider
                 ->fallback();
         });
 
+        $router = $this->app['router'];
+        $router->aliasMiddleware('gateway.verify', \Isg\LoadBalancer\Http\Middleware\VerifyLoadBalancerSignature::class);
+
         if ($this->app->runningInConsole()) {
             $this->commands([
+                \Isg\LoadBalancer\Console\Commands\InstallCommand::class,
                 \Isg\LoadBalancer\Console\Commands\HealthCheckCommand::class,
                 \Isg\LoadBalancer\Console\Commands\ManageNodeCommand::class,
                 \Isg\LoadBalancer\Console\Commands\PruneMetricsCommand::class,

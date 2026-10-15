@@ -14,8 +14,24 @@ class VerifyLoadBalancerSignature
     public function handle(Request $request, Closure $next, ?string $secret = null): Response
     {
         $secret = $secret ?: config('load-balancer.signature.secret');
+        $secrets = [];
+        if ($secret) {
+            $secrets[] = $secret;
+        }
 
-        if (!$secret) {
+        $keyId = (string) $request->headers->get('x-lb-key-id', '');
+        $configuredKeys = (array) config('load-balancer.signature.keys', []);
+        if ($keyId !== '' && isset($configuredKeys[$keyId])) {
+            array_unshift($secrets, $configuredKeys[$keyId]);
+        }
+
+        foreach ((array) config('load-balancer.signature.grace_secrets', []) as $graceKey) {
+            if ($graceKey && !in_array($graceKey, $secrets, true)) {
+                $secrets[] = $graceKey;
+            }
+        }
+
+        if (empty($secrets)) {
             return response()->json([
                 'error' => 'Server Configuration Error',
                 'message' => 'Load balancer signature secret is not configured on this backend.',
@@ -47,13 +63,21 @@ class VerifyLoadBalancerSignature
             ], 401);
         }
 
-        // Calculate expected HMAC
+        // Calculate expected HMAC across allowed rotation keys
         $method = strtoupper($request->getMethod());
         $path = $request->path();
         $payload = "{$method}|{$path}|{$timestamp}|{$requestId}";
-        $expectedSignature = hash_hmac('sha256', $payload, $secret);
 
-        if (!hash_equals($expectedSignature, $signature)) {
+        $isValid = false;
+        foreach ($secrets as $keyToTest) {
+            $expectedSignature = hash_hmac('sha256', $payload, $keyToTest);
+            if (hash_equals($expectedSignature, $signature)) {
+                $isValid = true;
+                break;
+            }
+        }
+
+        if (!$isValid) {
             return response()->json([
                 'error' => 'Forbidden',
                 'message' => 'Invalid load balancer signature.',

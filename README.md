@@ -22,6 +22,7 @@ A turnkey, high-resilience standalone Load Balancer and Reverse Proxy applicatio
   - [5. Speed & Latency Optimizations](#5-speed--latency-optimizations)
 - [Authentication & Secure Communications (Sanctum)](#authentication--secure-communications-sanctum)
 - [Interactive Swagger UI & OpenAPI Specification](#interactive-swagger-ui--openapi-specification)
+- [Visual Cluster Web Admin Control Center](#visual-cluster-web-admin-control-center)
 - [Ready-to-Run cURL Commands](#ready-to-run-curl-commands)
 - [Security & Zero-Trust Hardening](#security--zero-trust-hardening)
   - [1. HMAC-SHA256 Request Signing & Nonce Deep-Dive](#1-hmac-sha256-request-signing--nonce-deep-dive)
@@ -96,13 +97,30 @@ Require the package via Composer:
 composer require adrianlaraperez88/load-balancer
 ```
 
-Publish configuration and migration files:
+### Turnkey 1-Command Setup Wizard
+
+Run the interactive installation command to set up configuration, HMAC security secrets, database migrations, initial nodes, and admin tokens in under 10 seconds:
 
 ```bash
-php artisan vendor:publish --provider="Isg\LoadBalancer\LoadBalancerServiceProvider"
+php artisan loadbalancer:install
 ```
 
-Register the reverse proxy route macro on the gateway server (`routes/web.php` or `routes/api.php`):
+Or for automated headless CI/CD deployments:
+
+```bash
+php artisan loadbalancer:install --no-interaction --mode=proxy --strategy=round_robin
+```
+
+This single command automatically:
+1. Publishes `config/load-balancer.php`.
+2. Generates a cryptographically strong 64-character HMAC secret key and appends `LOAD_BALANCER_HMAC_SECRET` into `.env`.
+3. Runs database migrations for `upstream_nodes`, `ip_rules`, and `request_metrics`.
+4. Prompts to register your initial upstream backend nodes.
+5. Issues a dedicated admin Sanctum token for immediate API & Web GUI administration.
+
+### Gateway Reverse Proxy Route Macro
+
+Register the reverse proxy route macro on your ingress gateway server (`routes/web.php` or `routes/api.php`):
 
 ```php
 use Illuminate\Support\Facades\Route;
@@ -112,6 +130,20 @@ Route::loadBalancer('{any?}');
 ```
 
 > **Note**: The `Route::loadBalancer()` macro automatically strips stateful session, cookie encryption, and CSRF middleware to avoid intercepting or corrupting backend authentication headers.
+
+### Turnkey Backend Protection (1-Line Middleware)
+
+On your backend processing servers (`app01`, `app02`, ..., `appN`), protect incoming routes so they **only accept requests originating from the gateway** using the pre-registered `'gateway.verify'` middleware alias:
+
+```php
+use Illuminate\Support\Facades\Route;
+
+// Backend servers reject direct requests (401 Unauthorized) and only accept HMAC-signed traffic from app03:
+Route::middleware('gateway.verify')->group(function () {
+    Route::apiResource('/orders', OrderController::class);
+    Route::get('/users/me', [UserController::class, 'me']);
+});
+```
 
 ---
 
@@ -222,7 +254,7 @@ For cloud deployments (AWS ECS, GCP Cloud Run, Azure Kubernetes Service, or Linu
 
 ### 2. Quick Start with Docker Compose (Production)
 
-A complete production stack with the load balancer gateway, Redis cache, and backend connections is defined in [`docker-compose.prod.yml`](file:///f:/ai-projects/load-balancer/docker-compose.prod.yml):
+A complete production stack with the load balancer gateway, Valkey in-memory cache, and backend connections is defined in [`docker-compose.prod.yml`](file:///f:/ai-projects/load-balancer/docker-compose.prod.yml):
 
 ```bash
 # Build and launch the containerized load balancer stack:
@@ -234,7 +266,7 @@ docker compose -f docker-compose.prod.yml logs -f gateway
 
 ### 3. Local Multi-Node Test Cluster (`docker-compose.test-cluster.yml`)
 
-We provide a complete simulated environment featuring **1 Front Gateway (`app03_gateway` on port 8080) + 3 Backend Processing Nodes (`backend_app01`, `backend_app02`, `backend_app04`) + Redis Cache**:
+We provide a complete simulated environment featuring **1 Front Gateway (`app03_gateway` on port 8080) + 3 Backend Processing Nodes (`backend_app01`, `backend_app02`, `backend_app04`) + Valkey Cache (`valkey/valkey:8-alpine`)**:
 
 ```bash
 # Launch the 4-server cluster:
@@ -254,44 +286,69 @@ curl -X POST http://localhost:8080/api/items \
 curl http://localhost:8080/api/items
 ```
 
-### 4. High-Concurrency Scale Benchmark (1 Gateway + 5 Backends)
+### 4. High-Concurrency Scale Benchmark (1 Gateway + 10 Backends)
 
-A dedicated multi-node scale testing environment is provided in [`docker-compose.scale-test.yml`](file:///f:/ai-projects/load-balancer/docker-compose.scale-test.yml) and automated via [`docker/benchmark_stress_test.py`](file:///f:/ai-projects/load-balancer/docker/benchmark_stress_test.py):
+A multi-node scale testing environment is configured in [`docker-compose.scale-test.yml`](file:///f:/ai-projects/load-balancer/docker-compose.scale-test.yml) and automated via [`docker/run_scale_benchmark.py`](file:///f:/ai-projects/load-balancer/docker/run_scale_benchmark.py):
 
-- **1 Gateway (`app03_gateway`)**: Public ingress exposed on port `8080`, running PHP-FPM 8.3 (tuned to 64 dynamic worker pools) and Nginx.
-- **5 Backend Processing Nodes (`backend_app01` to `backend_app05`)**: Isolated in private Docker subnet, running PHP 8.3 CLI/FPM servers.
-- **1 Redis Cache (`cluster_redis`)**: For distributed node registry and atomic metrics caching.
+- **1 Gateway (`app03_gateway`)**: Public ingress on port `8080`, running PHP-FPM 8.3 (tuned to 64 dynamic worker pools) and Nginx.
+- **10 Backend Processing Nodes (`backend_app01` to `backend_app10`)**: Running on private Docker subnet with ports isolated.
+- **1 Valkey Cache (`cluster_valkey`)**: Running `valkey/valkey:8-alpine` for high-throughput node registry and atomic metrics caching.
 
-#### How to Run the Scale Benchmark:
+#### How to Run the 10-Backend Benchmark & Graphic Generator:
 ```bash
-# 1. Start the 1 Gateway + 5 Backend cluster
+# 1. Start the 1 Gateway + 10 Backend cluster
 docker compose -f docker-compose.scale-test.yml up -d
 
-# 2. Run the multi-tier benchmark test (200 to 2,000 requests across 10 to 200 concurrency)
-python docker/benchmark_stress_test.py
+# 2. Run the timeout validation suite and 10,000-request scale benchmark
+python docker/run_scale_benchmark.py
 ```
 
-#### Multi-Tier Benchmark Results:
+#### Performance Graphic Dashboard:
+The test outputs a high-resolution 4-panel visual graphic: [`docker/performance_report_10nodes.png`](file:///f:/ai-projects/load-balancer/docker/performance_report_10nodes.png)
 
-| Concurrency Tier | Total Requests | Throughput (RPS) | Median Latency (p50) | 95th Percentile (p95) | Success Rate | Failed |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **10 Workers** | 200 requests | **51.8 RPS** | 166.0 ms | 233.2 ms | **100.0%** | 0 |
-| **50 Workers** | 1,000 requests | **87.1 RPS** | 550.9 ms | 717.7 ms | **100.0%** | 0 |
-| **100 Workers** | 1,500 requests | **98.0 RPS** | 1,010.7 ms | 1,131.8 ms | **100.0%** | 0 |
-| **200 Workers** | 2,000 requests | **100.0 RPS** | 1,992.9 ms | 2,072.5 ms | **100.0%** | 0 |
+#### Multi-Tier Benchmark Results (10,000 Requests):
 
-**4,700 total requests processed across 4 concurrency tiers with 0 dropped packets or timeout failures (100.0% success rate).**
+| Concurrency Tier | Total Requests | Elapsed Time | Throughput (RPS) | Median Latency (p50) | 95th Percentile (p95) | Success Rate | Failed |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **20 Workers** | 500 req | 6.88 s | **72.7 RPS** | 259.9 ms | 335.8 ms | **100.0%** | 0 |
+| **50 Workers** | 1,500 req | 16.74 s | **89.6 RPS** | 536.3 ms | 697.4 ms | **100.0%** | 0 |
+| **100 Workers** | 3,000 req | 30.53 s | **98.3 RPS** | 1,013.1 ms | 1,101.5 ms | **100.0%** | 0 |
+| **200 Workers** | 5,000 req | 51.85 s | **96.4 RPS** | 2,042.4 ms | 2,350.3 ms | **100.0%** | 0 |
 
-#### Traffic Distribution Uniformity Across the 5 Backend Nodes:
+**10,000 total requests processed across 10 backends with 0 dropped packets or errors (100.0% success rate).**
+
+#### Traffic Distribution Uniformity Across all 10 Backend Nodes:
 
 ```text
-  app01           :  403 req (20.2%) #############
-  app02           :  400 req (20.0%) #############
-  app03_compute   :  419 req (20.9%) #############
-  app04           :  363 req (18.1%) ############
-  app05           :  415 req (20.8%) #############
+  app01           :  480 req ( 9.6%) #########
+  app02           :  509 req (10.2%) ##########
+  app03_compute   :  461 req ( 9.2%) #########
+  app04           :  487 req ( 9.7%) #########
+  app05           :  603 req (12.1%) ############
+  app06           :  522 req (10.4%) ##########
+  app07           :  489 req ( 9.8%) #########
+  app08           :  477 req ( 9.5%) #########
+  app09           :  474 req ( 9.5%) #########
+  app10           :  498 req (10.0%) ##########
 ```
-*Round-robin distribution achieves an optimal ~20% balance per server across all 5 nodes under heavy concurrent load.*
+*Round-robin distribution achieves an optimal ~10% balance per server across all 10 nodes under heavy concurrent load.*
+
+#### Timeout Validation Results (1ms to 12s):
+
+| Injected Delay | Elapsed Time | Returned Status | Expected | Match | Behavior |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **1 ms** | 0.41 s | `200 OK` | `200` | **PASS** | Instant response |
+| **50 ms** | 0.30 s | `200 OK` | `200` | **PASS** | Instant response |
+| **250 ms** | 0.46 s | `200 OK` | `200` | **PASS** | Normal response |
+| **1 sec** | 1.23 s | `200 OK` | `200` | **PASS** | Normal response |
+| **3 sec** | 3.25 s | `200 OK` | `200` | **PASS** | Normal response |
+| **6 sec** | 6.25 s | `200 OK` | `200` | **PASS** | Normal response |
+| **8 sec** | 8.27 s | `200 OK` | `200` | **PASS** | Within 10s gateway timeout |
+| **12 sec** | 30.32 s | `502 / 504` | `[502, 504]` | **PASS** | **Timeout triggered! Gateway retried 3 healthy nodes, then safely aborted to protect client.** |
+
+#### 100k Throughput & 10-Minute Projection:
+- At **98.3 sustained RPS**, a single container gateway processes **58,980 requests in 10 minutes (600s)**.
+- Reaching **100k requests in 10 minutes** requires 167 RPS. Deploying **2 Gateway containers** behind an ALB/DNS will comfortably deliver **~196 RPS (100k in 8.5 minutes)** across the 10 backends.
 
 ---
 
@@ -317,6 +374,17 @@ python docker/benchmark_stress_test.py
 4. **Sub-Millisecond Node Registry Caching**:
    - Upstream node list is cached in Redis / APCu for 60 seconds.
    - Atomic cache clearing occurs instantly on any REST or Artisan node modification (`NodeManagementService::clearNodeCache()`).
+5. **Gateway Response Microcaching (`X-Cache: HIT / MISS`)**:
+   - For read-heavy endpoints (`GET`, `HEAD`), the ingress gateway can microcache upstream responses in Redis or local memory for 1 to 60 seconds.
+   - Sub-millisecond latency ($< 1\text{ ms}$) without hitting backend compute or network sockets.
+   - Safe by default: Requests with `Authorization` headers, user session cookies, or mutating verbs (`POST`, `PUT`, `DELETE`, `PATCH`) automatically bypass the cache and pass through directly to backends.
+   - Enabled via `.env`:
+     ```env
+     LOAD_BALANCER_CACHE_ENABLED=true
+     LOAD_BALANCER_CACHE_TTL=5
+     LOAD_BALANCER_CACHE_STORE=redis
+     ```
+   - Inspection: Responses return `X-Cache: HIT` or `X-Cache: MISS` headers.
 
 ---
 
@@ -375,6 +443,22 @@ curl -i http://localhost:8080/api/docs
 # Download the complete OpenAPI 3.0 specification
 curl -s http://localhost:8080/api/docs/openapi.json | jq .
 ```
+
+---
+
+## Visual Cluster Web Admin Control Center
+
+A modern, responsive, dark-mode single-page administrative dashboard is built directly into the gateway. It allows DevOps and engineering leads to monitor and control the cluster in real time without touching the command line or database:
+
+- **Web Admin Dashboard URL**: [http://localhost:8080/admin/cluster](http://localhost:8080/admin/cluster)
+- **Zero-Dependency Architecture**: Built using pure vanilla modern HTML5, CSS3 glassmorphism, and asynchronous vanilla JavaScript.
+
+### Key Capabilities:
+1. **Live Cluster KPI Metrics**: Live counters for Total Registered Nodes, Active Healthy Nodes, Drained / Maintenance Nodes, and Gateway Status.
+2. **Instant Traffic Draining**: 1-click **Drain / Maintain** toggle removes a backend node from the proxy rotation instantly (atomic cache invalidation). Click again to return to **Active** status.
+3. **Dynamic Node Provisioning**: Click **"+ Add Upstream Node"** to register a new backend container/server (`name`, `URL`, `weight`) with real-time modal validation.
+4. **Permanent Node Deletion**: Remove decommissioned servers from the cluster database with confirmation safeguards.
+5. **Zero-Trust Administrative Protection**: Locked down by default with an "Authentication Required" lock screen. Requires pasting your configured `LOAD_BALANCER_METRICS_TOKEN` (Bearer token) and clicking **Unlock** to view KPIs, list nodes, or execute administrative actions. Unauthorized requests are strictly rejected with HTTP 401. Active tokens are securely persisted in browser `sessionStorage` for convenience.
 
 ---
 
@@ -497,6 +581,27 @@ $middleware->api(append: [
     VerifyLoadBalancerSignature::class,
 ]);
 ```
+
+Or simply use the route alias: `Route::middleware('gateway.verify')`.
+
+#### Zero-Downtime HMAC Key Rotation
+
+In enterprise environments, security policies require periodic secret rotation. To rotate keys without dropping inflight requests or requiring simultaneous downtime across all servers:
+
+1. Configure `active_key_id`, key mappings, and `grace_secrets` in `config/load-balancer.php`:
+   ```php
+   'signature' => [
+       'enabled' => env('LOAD_BALANCER_SIGNATURE_ENABLED', true),
+       'active_key_id' => env('LOAD_BALANCER_ACTIVE_KEY_ID', 'v2'),
+       'keys' => [
+           'v1' => env('LOAD_BALANCER_KEY_V1'),
+           'v2' => env('LOAD_BALANCER_KEY_V2'),
+       ],
+       'grace_secrets' => array_filter(explode(',', (string) env('LOAD_BALANCER_GRACE_SECRETS', ''))),
+   ],
+   ```
+2. The gateway automatically tags requests with header `X-LB-Key-Id: v2`.
+3. Backend servers verify against the active key ID (`v2`), falling back to any configured grace keys (`LOAD_BALANCER_GRACE_SECRETS`), providing seamless, zero-downtime rotation.
 
 #### Hands-On cURL Demonstration:
 
@@ -712,9 +817,16 @@ Register it in `config/load-balancer.php`:
 | `LOAD_BALANCER_HMAC_SECRET` | string | `null` | 64-byte shared secret key for HMAC signature generation |
 | `LOAD_BALANCER_WAF_ENABLED` | bool | `true` | Enable internal IP rate limiter |
 | `LOAD_BALANCER_WAF_LIMIT` | int | `500` | Max requests per minute per IP |
+| `LOAD_BALANCER_CACHE_ENABLED` | bool | `false` | Enable sub-millisecond gateway response microcaching |
+| `LOAD_BALANCER_CACHE_TTL` | int | `5` | Microcache duration in seconds (1 to 60s) |
+| `LOAD_BALANCER_CACHE_STORE` | string | `null` | Cache repository store (`valkey`, `redis`, `database`, `file`) |
+| `LOAD_BALANCER_ACTIVE_KEY_ID` | string | `null` | Active key identifier tag (e.g. `v2`) attached via `X-LB-Key-Id` |
+| `LOAD_BALANCER_GRACE_SECRETS` | string | `null` | Comma-separated previous secrets accepted during zero-downtime key rotation |
 | `LOAD_BALANCER_METRICS_ENABLED` | bool | `false` | Enable `/api/load-balancer/metrics` endpoint |
 | `LOAD_BALANCER_METRICS_TOKEN` | string | `null` | Required Bearer token for accessing metrics |
 | `LOAD_BALANCER_METRICS_IP_ALLOWLIST` | string | `null` | Comma-separated list of allowed CIDRs / IPs for metrics |
+| `REDIS_HOST` | string | `127.0.0.1` | Valkey / Redis cluster service hostname |
+| `REDIS_PORT` | int | `6379` | Valkey / Redis cluster service port |
 
 ---
 
@@ -726,15 +838,16 @@ The package includes comprehensive unit and integration test coverage:
 # Run PHPUnit test suite:
 php vendor/bin/phpunit
 
-# Or via Docker sandbox:
-cd tests/sandbox
-docker compose up -d
-docker compose exec app php vendor/bin/phpunit
+# Or via Docker:
+docker exec app03_gateway vendor/bin/phpunit
 ```
 
-All 47 unit and integration tests (155 assertions, 100% green) validate:
+All 53 unit and integration tests (172 assertions, 100% green) validate:
 - Zero-trust header sanitization, IP proxy spoofing prevention, and multi-cookie preservation.
 - Laravel Sanctum authentication, Bearer token verification, and token revocation on logout.
+- Gateway response microcaching (`X-Cache: HIT / MISS`) and authentication bypass.
+- Zero-downtime HMAC key rotation (`X-LB-Key-Id`, active key, and grace-period secrets).
+- Turnkey installation CLI wizard (`loadbalancer:install`) and `'gateway.verify'` middleware.
 - REST API cluster and IP affinity rule database management with validation.
 - Sliding-window circuit breaker tripping and fail-open resilience.
 - Windows NTFS path traversal defenses (alternate streams, 8.3 short names, trailing dots).

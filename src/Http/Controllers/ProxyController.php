@@ -56,6 +56,27 @@ class ProxyController extends Controller
             }
         }
 
+        // --- Gateway Response Microcaching ---
+        $cacheConfig = config('load-balancer.cache', []);
+        $cacheEnabled = !empty($cacheConfig['enabled']);
+        $cacheKey = null;
+
+        if ($cacheEnabled && in_array($method, $cacheConfig['methods'] ?? ['GET', 'HEAD'], true)) {
+            if (!$request->headers->has('authorization') && !$request->cookies->has('app03_gateway_session')) {
+                $cacheKey = 'lb_proxy_cache_' . sha1($method . '|' . $request->path() . '|' . serialize($request->query()));
+                $cached = \Illuminate\Support\Facades\Cache::store($cacheConfig['store'] ?? null)->get($cacheKey);
+                if ($cached !== null) {
+                    $cachedResponse = response($cached['body'], $cached['status']);
+                    foreach ($cached['headers'] as $name => $values) {
+                        $cachedResponse->headers->set($name, $values);
+                    }
+                    $cachedResponse->headers->set('x-cache', 'HIT');
+                    $cachedResponse->headers->set('x-request-id', $requestId);
+                    return $cachedResponse;
+                }
+            }
+        }
+
         $triedNodes = [];
         $maxAttempts = max(1, (int) config('load-balancer.retry.max_attempts', 3));
         $idempotent = array_map('strtoupper', (array) config('load-balancer.retry.idempotent_methods', ['GET', 'HEAD', 'OPTIONS']));
@@ -135,7 +156,19 @@ class ProxyController extends Controller
             $this->manager->incrementNodeLoad($node->id);
             $this->logMetric($request, $node->id, $proxyResponse->status(), $startTime);
 
-            return $this->toClientResponse($proxyResponse, $requestId);
+            if ($cacheKey !== null && $proxyResponse->successful() && !config('load-balancer.stream_responses', false)) {
+                \Illuminate\Support\Facades\Cache::store($cacheConfig['store'] ?? null)->put($cacheKey, [
+                    'body' => $proxyResponse->body(),
+                    'status' => $proxyResponse->status(),
+                    'headers' => $this->sanitizer->forClient($proxyResponse->headers()),
+                ], now()->addSeconds((int) ($cacheConfig['ttl_seconds'] ?? 5)));
+            }
+
+            $response = $this->toClientResponse($proxyResponse, $requestId);
+            if ($cacheKey !== null) {
+                $response->headers->set('x-cache', 'MISS');
+            }
+            return $response;
         }
 
         $status = $lastWasTimeout ? 504 : 502;
