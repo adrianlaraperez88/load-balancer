@@ -11,6 +11,7 @@ This directory contains standalone, production-ready T-SQL scripts for deploying
 | `01_create_tables.sql` | Creates `upstream_nodes`, `ip_rules`, and `request_metrics` tables with indexes, constraints, and defaults. Idempotent (`IF NOT EXISTS`). |
 | `02_seed_initial_cluster.sql` | Seed script to register backend nodes (`app01`, `app02`, ..., `app0N`) using T-SQL `MERGE`. |
 | `03_rollback_tables.sql` | Drops all three tables in correct reverse foreign-key order. |
+| `04_create_sanctum_tables.sql` | Creates `users` and `personal_access_tokens` tables for Laravel Sanctum authentication. Idempotent. |
 
 ---
 

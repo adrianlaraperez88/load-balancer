@@ -2,36 +2,40 @@
 
 namespace Isg\LoadBalancer\Strategies;
 
-use Isg\LoadBalancer\Contracts\LoadBalancingStrategy;
-use Illuminate\Support\Collection;
 use Illuminate\Http\Request;
-use Isg\LoadBalancer\Models\UpstreamNode;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Isg\LoadBalancer\Contracts\LoadBalancingStrategy;
+use Isg\LoadBalancer\Models\UpstreamNode;
 
 class AdaptiveLatencyStrategy implements LoadBalancingStrategy
 {
     /**
-     * Select fundamentally fastest active node mathematically via Exponential Moving Averages.
-     *
-     * @param Collection $nodes
-     * @param Request|null $request
-     * @return UpstreamNode|null
+     * Select node using the Power-of-Two-Choices (P2C) algorithm over EMA latencies.
+     * Picks two random candidates from the pool and selects the faster one,
+     * preventing the herd-oscillation effect inherent in "always pick absolute fastest".
      */
     public function selectNode(Collection $nodes, ?Request $request = null): ?UpstreamNode
     {
-        $activeNodes = $nodes->filter(fn ($node) => $node->is_active);
+        $activeNodes = $nodes->filter(fn ($node) => $node->is_active)->values();
 
-        if ($activeNodes->isEmpty()) {
+        $count = $activeNodes->count();
+        if ($count === 0) {
             return null;
         }
 
-        // Sort ascending by cached latency (lower is faster)
-        $sortedNodes = $activeNodes->sortBy(function ($node) {
-            // Default penalty of 1000ms if no metrics recorded avoiding cold-start collisions
-            return Cache::get("node_{$node->id}_latency", 1000); 
-        });
+        if ($count === 1) {
+            return $activeNodes->first();
+        }
 
-        // Pull the fastest one organically
-        return $sortedNodes->first();
+        // Pick two distinct random nodes (Power of Two Choices)
+        $indices = array_rand($activeNodes->all(), 2);
+        $nodeA = $activeNodes->get($indices[0]);
+        $nodeB = $activeNodes->get($indices[1]);
+
+        $latencyA = (int) Cache::get("node_{$nodeA->id}_latency", 1000);
+        $latencyB = (int) Cache::get("node_{$nodeB->id}_latency", 1000);
+
+        return $latencyA <= $latencyB ? $nodeA : $nodeB;
     }
 }

@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # app03: The Front Reverse Proxy Gateway
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: app03_gateway
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - APP_NAME=app03_gateway
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_KEY=${APP_KEY}
+      
+      # Load Balancer Configuration
+      - LOAD_BALANCER_MODE=proxy
+      - LOAD_BALANCER_DEFAULT_STRATEGY=round_robin
+      - LOAD_BALANCER_FORCE_HTTPS=false # true if external, false for private LAN/VPC
+      - LOAD_BALANCER_TIMEOUT=60
+      - LOAD_BALANCER_CONNECT_TIMEOUT=2
+      - LOAD_BALANCER_SAMPLE_RATE=0.01
+      - LOAD_BALANCER_STREAM_RESPONSES=true
+      
+      # Database Connection (MSSQL, MySQL, or Postgres)
+      - DB_CONNECTION=${DB_CONNECTION:-sqlsrv}
+      - DB_HOST=${DB_HOST:-mssql-server}
+      - DB_PORT=${DB_PORT:-1433}
+      - DB_DATABASE=${DB_DATABASE:-loadbalancer}
+      - DB_USERNAME=${DB_USERNAME:-sa}
+      - DB_PASSWORD=${DB_PASSWORD}
+      
+      # Fast in-memory caching
+      - CACHE_DRIVER=redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - redis
+    networks:
+      - lb_network
+
+  # High-performance in-memory cache for circuits, active nodes, and rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: app03_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - lb_network
+
+volumes:
+  redis_data:
+
+networks:
+  lb_network:
+    driver: bridge

@@ -119,4 +119,28 @@ class StrategiesTest extends TestCase
         $this->assertNotNull($selected);
         $this->assertEquals(2, $selected->id);
     }
+
+    public function test_adaptive_latency_strategy_picks_faster_node()
+    {
+        Cache::put('node_1_latency', 250);
+        Cache::put('node_2_latency', 50);
+
+        $node1 = new UpstreamNode();
+        $node1->id = 1;
+        $node1->is_active = true;
+
+        $node2 = new UpstreamNode();
+        $node2->id = 2;
+        $node2->is_active = true;
+
+        $nodes = collect([$node1, $node2]);
+
+        $strategy = new \Isg\LoadBalancer\Strategies\AdaptiveLatencyStrategy();
+        $selected = $strategy->selectNode($nodes);
+
+        $this->assertNotNull($selected);
+        // Node 2 has lower latency (50 < 250)
+        $this->assertEquals(2, $selected->id);
+    }
 }
+

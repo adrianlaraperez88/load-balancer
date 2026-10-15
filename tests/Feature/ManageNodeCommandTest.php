@@ -51,6 +51,26 @@ class ManageNodeCommandTest extends TestCase
         ]);
     }
 
+    public function test_rejects_invalid_or_credential_embedded_urls()
+    {
+        // Missing / malformed scheme
+        $this->artisan('loadbalancer:node', [
+            'action' => 'add',
+            '--name' => 'bad1',
+            '--url' => 'ftp://10.0.0.11',
+        ])->assertExitCode(1);
+
+        // Embedded credentials
+        $this->artisan('loadbalancer:node', [
+            'action' => 'add',
+            '--name' => 'bad2',
+            '--url' => 'http://admin:secret@10.0.0.11:8000',
+        ])->assertExitCode(1);
+
+        $this->assertDatabaseMissing('upstream_nodes', ['name' => 'bad1']);
+        $this->assertDatabaseMissing('upstream_nodes', ['name' => 'bad2']);
+    }
+
     public function test_can_list_nodes_via_command()
     {
         UpstreamNode::create([

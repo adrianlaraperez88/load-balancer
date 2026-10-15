@@ -1,0 +1,8 @@
+.git
+.github
+.agents
+vendor
+node_modules
+tests/sandbox/test-app
+*.log
+.phpunit.result.cache

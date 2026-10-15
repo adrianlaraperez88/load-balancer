@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        $connection = config('load-balancer.database_connection');
+        if (!Schema::connection($connection)->hasTable('request_metrics')) {
+            Schema::connection($connection)->create('request_metrics', function (Blueprint $table) {
+                $table->id();
+                $table->string('incoming_ip');
+                $table->foreignId('upstream_node_id')->nullable()->constrained('upstream_nodes')->nullOnDelete();
+                $table->string('method');
+                $table->string('uri');
+                $table->integer('status_code');
+                $table->integer('response_time_ms');
+                $table->timestamp('created_at')->useCurrent();
+            });
+        }
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::connection(config('load-balancer.database_connection'))->dropIfExists('request_metrics');
+    }
+};

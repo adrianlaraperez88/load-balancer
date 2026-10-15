@@ -80,6 +80,20 @@ class ManageNodeCommand extends Command
             return Command::FAILURE;
         }
 
+        $parsed = parse_url($url);
+        $scheme = strtolower($parsed['scheme'] ?? '');
+        $host = $parsed['host'] ?? '';
+
+        if (!in_array($scheme, ['http', 'https'], true) || empty($host)) {
+            $this->error('The --url must be a valid HTTP or HTTPS URL (e.g. http://10.0.0.11:8000).');
+            return Command::FAILURE;
+        }
+
+        if (isset($parsed['user']) || isset($parsed['pass'])) {
+            $this->error('The --url must not contain embedded user credentials.');
+            return Command::FAILURE;
+        }
+
         $node = UpstreamNode::create([
             'name' => $name,
             'url' => rtrim($url, '/'),

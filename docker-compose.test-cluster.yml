@@ -1,0 +1,107 @@
+version: '3.8'
+
+# ==============================================================================
+# Multi-Node Test Cluster: 1 Front Gateway (app03) + 3 Backends (app01, app02, app04)
+# ==============================================================================
+
+services:
+  # 1. Front Reverse Proxy Gateway (app03)
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: app03_gateway
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - APP_NAME=app03_gateway
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_KEY=base64:u3G5jEHzkH7P7M4N1w8xYz9vB2cQ5sT8u1vW4xY7z0A=
+      - APP_URL=http://localhost:8080
+      
+      # Database: local SQLite inside container
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/html/database/database.sqlite
+      
+      # Reverse Proxy & Load Balancer Settings
+      - LOAD_BALANCER_MODE=proxy
+      - LOAD_BALANCER_DEFAULT_STRATEGY=round_robin
+      - LOAD_BALANCER_TIMEOUT=30
+      - LOAD_BALANCER_CONNECT_TIMEOUT=3
+      - LOAD_BALANCER_FORCE_HTTPS=false
+      - LOAD_BALANCER_STREAM_RESPONSES=true
+      - LOAD_BALANCER_LOGGING=true
+      - LOAD_BALANCER_SAMPLE_RATE=1.0
+      
+      # Zero-Trust HMAC Request Signing
+      - LOAD_BALANCER_SIGN_REQUESTS=true
+      - LOAD_BALANCER_HMAC_SECRET=production-shared-secret-key-32-bytes
+      
+      # Management API and Observability
+      - LOAD_BALANCER_METRICS_ENABLED=true
+      - LOAD_BALANCER_METRICS_TOKEN=admin-cluster-secret-token
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - backend_app01
+      - backend_app02
+      - backend_app04
+      - redis
+    networks:
+      - cluster_net
+
+  # 2. Backend Processing Node 1 (app01)
+  backend_app01:
+    image: php:8.3-cli-alpine
+    container_name: backend_app01
+    restart: unless-stopped
+    environment:
+      - SERVER_NAME=app01
+    volumes:
+      - ./docker/test-cluster/backend.php:/app/backend.php
+    working_dir: /app
+    command: php -S 0.0.0.0:8000 /app/backend.php
+    networks:
+      - cluster_net
+
+  # 3. Backend Processing Node 2 (app02)
+  backend_app02:
+    image: php:8.3-cli-alpine
+    container_name: backend_app02
+    restart: unless-stopped
+    environment:
+      - SERVER_NAME=app02
+    volumes:
+      - ./docker/test-cluster/backend.php:/app/backend.php
+    working_dir: /app
+    command: php -S 0.0.0.0:8000 /app/backend.php
+    networks:
+      - cluster_net
+
+  # 4. Backend Processing Node 3 (app04)
+  backend_app04:
+    image: php:8.3-cli-alpine
+    container_name: backend_app04
+    restart: unless-stopped
+    environment:
+      - SERVER_NAME=app04
+    volumes:
+      - ./docker/test-cluster/backend.php:/app/backend.php
+    working_dir: /app
+    command: php -S 0.0.0.0:8000 /app/backend.php
+    networks:
+      - cluster_net
+
+  # 5. Shared Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cluster_redis
+    restart: unless-stopped
+    networks:
+      - cluster_net
+
+networks:
+  cluster_net:
+    driver: bridge

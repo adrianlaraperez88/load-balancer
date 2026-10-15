@@ -1,0 +1,78 @@
+[
+  {
+    "concurrency": 10,
+    "total_requests": 200,
+    "elapsed_sec": 3.86,
+    "rps": 51.8,
+    "success_rate_pct": 100.0,
+    "p50_ms": 166.0,
+    "p95_ms": 233.2,
+    "p99_ms": 447.7,
+    "min_ms": 127.4,
+    "max_ms": 577.7,
+    "server_distribution": {
+      "app05": 44,
+      "app01": 41,
+      "app02": 41,
+      "app03_compute": 36,
+      "app04": 38
+    }
+  },
+  {
+    "concurrency": 50,
+    "total_requests": 1000,
+    "elapsed_sec": 11.48,
+    "rps": 87.1,
+    "success_rate_pct": 100.0,
+    "p50_ms": 550.9,
+    "p95_ms": 717.7,
+    "p99_ms": 789.0,
+    "min_ms": 225.8,
+    "max_ms": 871.0,
+    "server_distribution": {
+      "app04": 187,
+      "app05": 201,
+      "app01": 219,
+      "app02": 199,
+      "app03_compute": 194
+    }
+  },
+  {
+    "concurrency": 100,
+    "total_requests": 1500,
+    "elapsed_sec": 15.31,
+    "rps": 98.0,
+    "success_rate_pct": 100.0,
+    "p50_ms": 1010.7,
+    "p95_ms": 1131.8,
+    "p99_ms": 1231.0,
+    "min_ms": 403.4,
+    "max_ms": 1381.2,
+    "server_distribution": {
+      "app03_compute": 319,
+      "app04": 288,
+      "app05": 313,
+      "app01": 305,
+      "app02": 275
+    }
+  },
+  {
+    "concurrency": 200,
+    "total_requests": 2000,
+    "elapsed_sec": 20.0,
+    "rps": 100.0,
+    "success_rate_pct": 100.0,
+    "p50_ms": 1992.9,
+    "p95_ms": 2072.5,
+    "p99_ms": 2118.6,
+    "min_ms": 472.7,
+    "max_ms": 2278.7,
+    "server_distribution": {
+      "app03_compute": 419,
+      "app04": 363,
+      "app05": 415,
+      "app01": 403,
+      "app02": 400
+    }
+  }
+]
